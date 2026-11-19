@@ -1,0 +1,91 @@
+@page "/checkout"
+@inject OrderState OrderState
+@inject HttpClient HttpClient
+@inject NavigationManager NavigationManager
+
+<PageTitle>Checkout - Blazing Pizza</PageTitle>
+
+<div class="main">
+    <h1>Review your order</h1>
+
+    @if (!OrderState.Order.Pizzas.Any())
+    {
+        <p>Your cart is empty.</p>
+        <a href="/" class="btn btn-primary">Choose a pizza</a>
+    }
+    else
+    {
+        <div class="checkout-list">
+            @foreach (var pizza in OrderState.Order.Pizzas)
+            {
+                <div style="padding: 16px; border-bottom: 1px solid #ccc;">
+                    <h2>@pizza.Special.Name</h2>
+                    <p>Size: @pizza.Size inches</p>
+                    <p>Price: @FormatPrice(pizza.GetTotalPrice())</p>
+                </div>
+            }
+        </div>
+
+        <h2 style="margin-top: 24px;">
+            Total: @FormatPrice(OrderState.Order.GetTotalPrice())
+        </h2>
+
+        @if (!string.IsNullOrWhiteSpace(errorMessage))
+        {
+            <p role="alert" style="color: darkred;">@errorMessage</p>
+        }
+
+        <button class="btn btn-success"
+                disabled="@isSubmitting"
+                @onclick="PlaceOrder">
+            @(isSubmitting ? "Sending order..." : "Place order")
+        </button>
+
+        <a href="/" class="btn btn-secondary">Back to pizzas</a>
+    }
+</div>
+
+@code {
+    private bool isSubmitting;
+    private string errorMessage = "";
+
+    private static string FormatPrice(decimal amount)
+    {
+        return "Bs. " + amount.ToString(
+            "N2",
+            System.Globalization.CultureInfo.GetCultureInfo("es-VE"));
+    }
+
+    private async Task PlaceOrder()
+    {
+        if (isSubmitting || !OrderState.Order.Pizzas.Any())
+        {
+            return;
+        }
+
+        isSubmitting = true;
+        errorMessage = "";
+
+        try
+        {
+            using var response = await HttpClient.PostAsJsonAsync(
+                NavigationManager.BaseUri + "orders",
+                OrderState.Order);
+
+            response.EnsureSuccessStatusCode();
+
+            var orderId = await response.Content.ReadFromJsonAsync<int>();
+
+            OrderState.ResetOrder();
+            NavigationManager.NavigateTo($"/myorders/{orderId}");
+        }
+        catch
+        {
+            errorMessage = "The order could not be sent. Please try again.";
+        }
+        finally
+        {
+            isSubmitting = false;
+        }
+    }
+}

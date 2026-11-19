@@ -1,35 +1,75 @@
-@inject HttpClient HttpClient
-
 <div class="dialog-container">
-    <div class="dialog">
+    <div class="dialog"
+         role="dialog"
+         aria-modal="true"
+         aria-labelledby="pizza-dialog-title">
+
         <div class="dialog-title">
-            <h2>@Pizza.Special.Name</h2>
+            <h2 id="pizza-dialog-title">@Pizza.Special.Name</h2>
             @Pizza.Special.Description
         </div>
-        <form class="dialog-body">
+
+        <div class="dialog-body">
             <div>
-                <label>Size:</label>
-                <input type="range" min="@Pizza.MinimumSize" max="@Pizza.MaximumSize" step="1" @bind="Pizza.Size" @bind:event="oninput" />
+                <label for="pizza-size">Size:</label>
+
+                <input id="pizza-size"
+                       type="range"
+                       min="@Pizza.MinimumSize"
+                       max="@Pizza.MaximumSize"
+                       step="1"
+                       @bind="Pizza.Size"
+                       @bind:event="oninput" />
+
                 <span class="size-label">
-                    @(Pizza.Size)" (£@(Pizza.GetFormattedTotalPrice()))
+                    @(Pizza.Size)" (@FormatPrice(Pizza.GetTotalPrice()))
                 </span>
             </div>
-        </form>
+        </div>
 
         <div class="dialog-buttons">
-            <button class="btn btn-secondary mr-auto" @onclick="OnCancel">Cancel</button>
+            <button type="button"
+                    class="btn btn-secondary mr-auto"
+                    @onclick="OnCancel">
+                Cancel
+            </button>
+
             <span class="mr-center">
-                Price: <span class="price">@(Pizza.GetFormattedTotalPrice())</span>
+                Price:
+                <span class="price">
+                    @FormatPrice(Pizza.GetTotalPrice())
+                </span>
             </span>
-            <button class="btn btn-success ml-auto" @onclick="OnConfirm">Order ></button>
+
+            <button type="button"
+                    class="btn btn-success ml-auto"
+                    @onclick="OnConfirm">
+                Add to order &gt;
+            </button>
         </div>
     </div>
 </div>
 
+<style>
+    .dialog .price::before {
+        content: none !important;
+    }
+</style>
+
 @code {
+    [Parameter]
+    public Pizza Pizza { get; set; }
 
-    [Parameter] public Pizza Pizza { get; set; }
-    [Parameter] public EventCallback OnCancel { get; set; }
-    [Parameter] public EventCallback OnConfirm { get; set; }
+    [Parameter]
+    public EventCallback OnCancel { get; set; }
 
+    [Parameter]
+    public EventCallback OnConfirm { get; set; }
+
+    private static string FormatPrice(decimal amount)
+    {
+        return "Bs. " + amount.ToString(
+            "N2",
+            System.Globalization.CultureInfo.GetCultureInfo("es-VE"));
+    }
 }

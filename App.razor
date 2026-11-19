@@ -1,10 +1,20 @@
-﻿<Router AppAssembly="@typeof(Program).Assembly" PreferExactMatches="@true">
+﻿<Router AppAssembly="@typeof(Program).Assembly">
     <Found Context="routeData">
-        <RouteView RouteData="@routeData" />
+        <RouteView RouteData="@routeData"
+                   DefaultLayout="@typeof(MainLayout)" />
+
+        <FocusOnNavigate RouteData="@routeData" Selector="h1" />
     </Found>
+
     <NotFound>
-        <LayoutView >
-            <p>Sorry, there's nothing at this address.</p>
+        <LayoutView Layout="@typeof(MainLayout)">
+            <div class="main">
+                <h1>Page not found</h1>
+                <p>Sorry, there is nothing at this address.</p>
+                <a href="/" class="btn btn-primary">
+                    Return to pizzas
+                </a>
+            </div>
         </LayoutView>
     </NotFound>
 </Router>

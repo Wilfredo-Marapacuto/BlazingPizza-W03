@@ -1,0 +1,103 @@
+@page "/myorders"
+@inject HttpClient HttpClient
+@inject NavigationManager NavigationManager
+
+<PageTitle>My orders - Blazing Pizza</PageTitle>
+
+<div class="main">
+    <h1>My orders</h1>
+
+    @if (isLoading)
+    {
+        <p>Loading orders...</p>
+    }
+    else if (!string.IsNullOrWhiteSpace(errorMessage))
+    {
+        <p role="alert">@errorMessage</p>
+        <button class="btn btn-primary" @onclick="LoadOrders">
+            Try again
+        </button>
+    }
+    else if (orders.Count == 0)
+    {
+        <p>You have not placed any orders yet.</p>
+        <a href="/" class="btn btn-primary">Choose a pizza</a>
+    }
+    else
+    {
+        <div style="overflow-x: auto;">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th scope="col">Order</th>
+                        <th scope="col">Placed</th>
+                        <th scope="col">Pizzas</th>
+                        <th scope="col">Total</th>
+                        <th scope="col">Status</th>
+                        <th scope="col">Details</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in orders)
+                    {
+                        <tr>
+                            <td>#@item.Order.OrderId</td>
+                            <td>@item.Order.CreatedTime.ToString("g")</td>
+                            <td>@item.Order.Pizzas.Count</td>
+                            <td>@FormatPrice(item.Order.GetTotalPrice())</td>
+                            <td>@item.StatusText</td>
+                            <td>
+                                <a href="@($"myorders/{item.Order.OrderId}")">
+                                    View order
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+
+        <button class="btn btn-primary" @onclick="LoadOrders">
+            Refresh orders
+        </button>
+    }
+</div>
+
+@code {
+    private List<OrderWithStatus> orders = new();
+    private bool isLoading;
+    private string errorMessage = "";
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadOrders();
+    }
+
+    private async Task LoadOrders()
+    {
+        isLoading = true;
+        errorMessage = "";
+
+        try
+        {
+            orders = await HttpClient.GetFromJsonAsync<List<OrderWithStatus>>(
+                NavigationManager.BaseUri + "orders")
+                ?? new List<OrderWithStatus>();
+        }
+        catch
+        {
+            errorMessage = "Orders could not be loaded. Please try again.";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private static string FormatPrice(decimal amount)
+    {
+        return "Bs. " + amount.ToString(
+            "N2",
+            System.Globalization.CultureInfo.GetCultureInfo("es-VE"));
+    }
+}

@@ -3,31 +3,39 @@
 @inject NavigationManager NavigationManager
 @inject OrderState OrderState
 
+<PageTitle>Blazing Pizza - Venezuela</PageTitle>
+
 <div class="main">
-  <h1>Blazing Pizzas</h1>
-  <ul class="pizza-cards">
-    @if (specials != null)
+    <h1>Blazing Pizzas</h1>
+
+    @if (!string.IsNullOrWhiteSpace(errorMessage))
     {
-      @foreach (var special in specials)
-      {
-          <li @onclick="@(() => OrderState.ShowConfigurePizzaDialog(special))" style="background-image: url('@special.ImageUrl')">
-          <div class="pizza-info">
-          <span class="title">@special.Name</span>
-          @special.Description
-          <span class="price">@special.GetFormattedBasePrice()</span>
-          </div>
-        </li>
-      }
+        <p role="alert">@errorMessage</p>
     }
-  </ul>
+
+    <ul class="pizza-cards">
+        @foreach (var special in specials)
+        {
+            <li @onclick="@(() => OrderState.ShowConfigurePizzaDialog(special))"
+                style="background-image: url('@special.ImageUrl')">
+                <div class="pizza-info">
+                    <span class="title">@special.Name</span>
+                    @special.Description
+                    <span class="price">
+                        @FormatPrice(special.BasePrice)
+                    </span>
+                </div>
+            </li>
+        }
+    </ul>
 </div>
 
 @if (OrderState.ShowingConfigureDialog)
 {
     <ConfigurePizzaDialog
-      Pizza="OrderState.ConfiguringPizza"
-      OnCancel="OrderState.CancelConfigurePizzaDialog"
-      OnConfirm="OrderState.ConfirmConfigurePizzaDialog" />
+        Pizza="OrderState.ConfiguringPizza"
+        OnCancel="OrderState.CancelConfigurePizzaDialog"
+        OnConfirm="OrderState.ConfirmConfigurePizzaDialog" />
 }
 
 <div class="sidebar">
@@ -36,39 +44,82 @@
         <div class="order-contents">
             <h2>Your order</h2>
 
-            @foreach (var configuredPizza in order.Pizzas)
+            @foreach (var pizza in order.Pizzas)
             {
-              <div class="cart-item">
-                  <a @onclick="@(() => OrderState.RemoveConfiguredPizza(configuredPizza))" class="delete-item">x</a>
-                  <div class="title">@(configuredPizza.Size)" @configuredPizza.Special.Name</div>
-                  <div class="item-price">
-                      @configuredPizza.GetFormattedTotalPrice()
-                  </div>
-              </div>
+                <div class="cart-item">
+                    <button type="button"
+                            class="delete-item"
+                            aria-label="Remove pizza"
+                            @onclick="@(() => OrderState.RemoveConfiguredPizza(pizza))">
+                        x
+                    </button>
+
+                    <div class="title">
+                        @(pizza.Size)" @pizza.Special.Name
+                    </div>
+
+                    <div class="item-price">
+                        @FormatPrice(pizza.GetTotalPrice())
+                    </div>
+                </div>
             }
         </div>
     }
     else
     {
-        <div class="empty-cart">Choose a pizza<br>to get started</div>
+        <div class="empty-cart">
+            Choose a pizza<br />to get started
+        </div>
     }
 
-    <div class="order-total @(order.Pizzas.Any() ? "" : "hidden")">
+    <div class="order-total">
         Total:
-        <span class="total-price">@order.GetFormattedTotalPrice()</span>
-        <a href="checkout" class="@(OrderState.Order.Pizzas.Count == 0 ? "btn btn-warning disabled" : "btn btn-warning")">
-            Order >
+        <span class="total-price">
+            @FormatPrice(order.GetTotalPrice())
+        </span>
+
+        <a href="checkout"
+           class="@(order.Pizzas.Any()
+               ? "btn btn-warning"
+               : "btn btn-warning disabled")">
+            Order &gt;
         </a>
     </div>
 </div>
 
-@code {
-  List<PizzaSpecial> specials = new List<PizzaSpecial>();
-  Order order => OrderState.Order;
+<style>
+    .pizza-info .price::before,
+    .item-price::before,
+    .total-price::before {
+        content: none !important;
+    }
+</style>
 
-  protected override async Task OnInitializedAsync()
-  {
-      specials = await HttpClient.GetFromJsonAsync<List<PizzaSpecial>>(NavigationManager.BaseUri + "specials");
-  }
+@code {
+    private List<PizzaSpecial> specials = new();
+    private string errorMessage = "";
+
+    private Order order => OrderState.Order;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            specials = await HttpClient.GetFromJsonAsync<List<PizzaSpecial>>(
+                NavigationManager.BaseUri + "specials")
+                ?? new List<PizzaSpecial>();
+        }
+        catch
+        {
+            errorMessage = "Pizzas could not be loaded. Please reload the page.";
+        }
+    }
+
+    private static string FormatPrice(decimal amount)
+    {
+        return "Bs. " + amount.ToString(
+            "N2",
+            System.Globalization.CultureInfo.GetCultureInfo("es-VE"));
+    }
 }
 		

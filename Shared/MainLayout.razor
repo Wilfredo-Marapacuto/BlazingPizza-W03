@@ -1,0 +1,35 @@
+@inherits LayoutComponentBase
+
+<header style="position: fixed; top: 0; left: 0; right: 0;
+               height: 80px; z-index: 100;
+               background: #b32121; color: white;
+               display: flex; align-items: center;
+               justify-content: space-between; padding: 0 24px;">
+
+    <a href="/" style="color: white; font-size: 26px;
+                       font-weight: bold; text-decoration: none;">
+        Blazing Pizza
+    </a>
+
+    <nav aria-label="Main navigation"
+         style="display: flex; gap: 24px;">
+        <NavLink href="/" Match="NavLinkMatch.All"
+                 style="color: white;">
+            Get Pizza
+        </NavLink>
+
+        <NavLink href="/myorders" style="color: white;">
+            My orders
+        </NavLink>
+    </nav>
+</header>
+
+@Body
+
+<footer style="position: fixed; bottom: 0; left: 0; right: 0;
+               z-index: 100; padding: 16px;
+               background: #262626; color: white;
+               text-align: center;">
+    Wilfredo Jose Marapacuto Verastegui — Venezuela
+</footer>
+

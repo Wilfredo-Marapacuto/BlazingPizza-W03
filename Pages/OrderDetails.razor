@@ -1,0 +1,99 @@
+@page "/myorders/{OrderId:int}"
+@inject HttpClient HttpClient
+@inject NavigationManager NavigationManager
+
+<PageTitle>Order details - Blazing Pizza</PageTitle>
+
+<div class="main">
+    <h1>Order details</h1>
+
+    @if (isLoading)
+    {
+        <p>Loading your order...</p>
+    }
+    else if (orderWithStatus == null)
+    {
+        <p role="alert">@errorMessage</p>
+        <a href="/" class="btn btn-primary">Back to pizzas</a>
+    }
+    else
+    {
+        <h2>Order #@orderWithStatus.Order.OrderId</h2>
+
+        <p>
+            Placed:
+            @orderWithStatus.Order.CreatedTime.ToString("g")
+        </p>
+
+        <p role="status">
+            <strong>Status: @orderWithStatus.StatusText</strong>
+        </p>
+
+        @foreach (var pizza in orderWithStatus.Order.Pizzas)
+        {
+            <div style="padding: 16px; border-bottom: 1px solid #ccc;">
+                <h3>@pizza.Special.Name</h3>
+                <p>Size: @pizza.Size inches</p>
+                <p>Price: @FormatPrice(pizza.GetTotalPrice())</p>
+            </div>
+        }
+
+        <h2 style="margin-top: 24px;">
+            Total: @FormatPrice(orderWithStatus.Order.GetTotalPrice())
+        </h2>
+
+        <button class="btn btn-primary" @onclick="LoadOrder">
+            Refresh status
+        </button>
+
+        <a href="/myorders" class="btn btn-secondary">My orders</a>
+        <a href="/" class="btn btn-secondary">Back to pizzas</a>
+    }
+</div>
+
+@code {
+    [Parameter]
+    public int OrderId { get; set; }
+
+    private OrderWithStatus orderWithStatus;
+    private bool isLoading;
+    private string errorMessage = "";
+
+    protected override async Task OnParametersSetAsync()
+    {
+        await LoadOrder();
+    }
+
+    private async Task LoadOrder()
+    {
+        isLoading = true;
+        errorMessage = "";
+
+        try
+        {
+            orderWithStatus = await HttpClient.GetFromJsonAsync<OrderWithStatus>(
+                NavigationManager.BaseUri + $"orders/{OrderId}");
+
+            if (orderWithStatus == null)
+            {
+                errorMessage = "This order could not be found.";
+            }
+        }
+        catch
+        {
+            orderWithStatus = null;
+            errorMessage = "The order could not be loaded. Please try again.";
+        }
+        finally
+        {
+            isLoading = false;
+        }
+    }
+
+    private static string FormatPrice(decimal amount)
+    {
+        return "Bs. " + amount.ToString(
+            "N2",
+            System.Globalization.CultureInfo.GetCultureInfo("es-VE"));
+    }
+}
